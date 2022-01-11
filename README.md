@@ -53,12 +53,15 @@ The final map, visible on Rviz is as follows:
 ![map](https://user-images.githubusercontent.com/62377263/148928409-d8d45436-5e83-4284-8f01-b21346316c74.JPG)
 
 ## Project structure
-Ater running ```final.launch```, seven nodes are active:
+After running ```final.launch```, seven nodes are active:
 
 ![graph3](https://user-images.githubusercontent.com/62377263/148929443-39082c28-c785-43f7-88e0-f35ff369175c.JPG)
 
 The ```\cmd_vel``` topic of ```\teleop``` node is remapped on ```\prov_cmd_vel```. In this way the velocity imposed by the user via keyboard isn't immediately imposed to the robot, but it's controlled by ```\final_UI``` node.
 
+```\final_UI``` node is also connected to ```\gazebo``` and ```\move_base``` nodes.
+It receives the robot's state by ```\move_base\feedback``` and publish the goal to reach on ```\move_base\feedback```.
+It also 
 
 
 
