@@ -103,7 +103,7 @@ while(k != 0)
 			    disable manual driving
 		break;
 	    default:
-	    	printf("***INVALID COMMAND***");
+	    	print an error for invalid command
 	    	break;
 ```
 When something is published on ```\move_base\feedback```:
