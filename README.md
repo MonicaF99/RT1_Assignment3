@@ -76,8 +76,8 @@ while(k != 0)
     print menu
     k = command read from the user
     switch(k)
-	   	case '0':
-	    	break;
+	    case '0':
+	    break;
 	    case '1':
             print a message to receive goal coordinates
 	    	read goal coordinates from the user
@@ -109,6 +109,33 @@ while(k != 0)
 ```
 When something is published on ```\move_base\feedback```:
 ```pseudocode
-    if 
+	if(current goal id from \move_base\feedback != id)
+		update id
+	if(there is a goal)
+		if(the goal is reached)
+			cancel goal
+			print success message
+		else
+			if(timeout is reached)
+				cancel the goal
+				print a fail message
 ```
-
+When something is published on ```\move_base\goal```, actual goal coordinates are saved.
+When something is published on ```\prov_cmd_vel```:
+```pseudocode
+	if(manual driving mode is disabled)
+		do nothing
+	else if(driving assistence is disabled)
+		publish the received velocity on ```\cmd_vel``` topic
+	else 
+		save velocity to be checked	
+```
+When something is published on ```\scan```:
+```pseudocode
+	if(driving assistence enabled)
+		if(there is an obstacle in robot direction)
+			stop the robot
+			print a warning
+		else
+			publish the stored velocity on ```\cmd_vel``` topic
+```
