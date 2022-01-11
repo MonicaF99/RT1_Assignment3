@@ -92,20 +92,19 @@ while(k != 0)
                 print warning
 	    case '3':
 	    	print manual driving menu
-            enable teleop twist keyboard
-            while(input = 'x')
-                read user input
-                if(input = 'a')
-                    enable/disable driving assistence
-                if(input = 'x')
-                    stop the robot
-                    disable driving assistence
-                    disable manual driving
+		enable teleop twist keyboard
+		while(input = 'x')
+			read user input
+			if(input = 'a')
+			    enable/disable driving assistence
+			if(input = 'x')
+			    stop the robot
+			    disable driving assistence
+			    disable manual driving
+		break;
 	    default:
 	    	printf("***INVALID COMMAND***");
 	    	break;
-	    	
-	    }
 ```
 When something is published on ```\move_base\feedback```:
 ```pseudocode
@@ -121,6 +120,7 @@ When something is published on ```\move_base\feedback```:
 				print a fail message
 ```
 When something is published on ```\move_base\goal```, actual goal coordinates are saved.
+
 When something is published on ```\prov_cmd_vel```:
 ```pseudocode
 	if(manual driving mode is disabled)
@@ -139,3 +139,7 @@ When something is published on ```\scan```:
 		else
 			publish the stored velocity on ```\cmd_vel``` topic
 ```
+
+## Possible improvements
+* In this project the user can replace the goal to be achieved even when the robot is still reaching the previous one, deleting the latter. A queue could be implemented where goals are reached sequentially.
+* Even when the map of the environment is complete, the robot is not able to understand a priori which points can be reached and which cannot. This could be improved.
