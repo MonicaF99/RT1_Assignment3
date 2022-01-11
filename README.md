@@ -64,6 +64,51 @@ It receives the robot's status by ```\move_base\feedback``` and publish the goal
 
 ```\final_UI``` node also receives the laser scanner output on ```\scan``` topic by ```\gazebo``` node and sends to this node the robot velocity on ```\cmd_vel``` topic.
 
+## Pseudocode
+```\final_UI``` node behavior can be explained by this pseudocode:
 
+```pseudocode
+initialize node
+initialize necessary publishers and subscribers
 
+while(k != 0)
+    print actual goal
+    print menu
+    k = command read from the user
+    switch(k)
+	   	case '0':
+	    	break;
+	    case '1':
+            print a message to receive goal coordinates
+	    	read goal coordinates from the user
+            publish them on \move_base\goal topic
+            take initial time
+	    	break;
+	    case '2':
+	    	if(there is a goal set)
+                cancel actual goal 
+                print success message
+            else
+                print warning
+	    case '3':
+	    	print manual driving menu
+            enable teleop twist keyboard
+            while(input = 'x')
+                read user input
+                if(input = 'a')
+                    enable/disable driving assistence
+                if(input = 'x')
+                    stop the robot
+                    disable driving assistence
+                    disable manual driving
+	    default:
+	    	printf("***INVALID COMMAND***");
+	    	break;
+	    	
+	    }
+```
+When something is published on ```\move_base\feedback```:
+```pseudocode
+    if 
+```
 
