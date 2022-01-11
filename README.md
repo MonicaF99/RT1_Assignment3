@@ -60,8 +60,10 @@ After running ```final.launch```, seven nodes are active:
 The ```\cmd_vel``` topic of ```\teleop``` node is remapped on ```\prov_cmd_vel```. In this way the velocity imposed by the user via keyboard isn't immediately imposed to the robot, but it's controlled by ```\final_UI``` node.
 
 ```\final_UI``` node is also connected to ```\gazebo``` and ```\move_base``` nodes.
-It receives the robot's state by ```\move_base\feedback``` and publish the goal to reach on ```\move_base\feedback```.
-It also 
+It receives the robot's status by ```\move_base\feedback``` and publish the goal to reach on ```\move_base\goal```. This node also subscribe on ```\move_base\goal``` topic to have a goal feedback. It can cancel current goal using ```\move_base\cancel``` topic.
+
+```\final_UI``` node also receives the laser scanner output on ```\scan``` topic by ```\gazebo``` node and sends to this node the robot velocity on ```\cmd_vel``` topic.
+
 
 
 
