@@ -127,31 +127,31 @@ It checks if the goal is been reached, updates the actual goal id and cancel the
 */
 void currentStatus(const move_base_msgs::MoveBaseActionFeedback::ConstPtr& msg) {
 
-    // Take the current robot position
-    float dist_x;
-    float dist_y;
-    float robot_x = msg->feedback.base_position.pose.position.x;
-    float robot_y = msg->feedback.base_position.pose.position.y;
-    
-    // Compute the error from the actual position and the goal position
-    dist_x = robot_x - x_goal;
-    dist_y = robot_y - y_goal;
-
-    // The robot is on the goal position
-    if (abs(dist_x) <= GOAL_TH && abs(dist_y) <= GOAL_TH)
-    {
-    	printf("Goal reached\n");
-    	cancelGoal();
-    }
-
     // Update the goal ID if there is a new goal
     if (id != msg->status.goal_id.id) {
         id = msg->status.goal_id.id;
     }
     
-    // If there is a goal check if the robot is trying to reach the goal for a too long time
+    // If there is a goal check if the robot has reached the goal or is trying to reach the goal for a too long time
     if(goal)
     {
+    	// Take the current robot position
+        float dist_x;
+	float dist_y;
+	float robot_x = msg->feedback.base_position.pose.position.x;
+	float robot_y = msg->feedback.base_position.pose.position.y;
+    
+	// Compute the error from the actual position and the goal position
+	dist_x = robot_x - x_goal;
+	dist_y = robot_y - y_goal;
+
+	// The robot is on the goal position
+	if (abs(dist_x) <= GOAL_TH && abs(dist_y) <= GOAL_TH)
+	{
+	     printf("Goal reached\n");
+	     cancelGoal();
+	}
+
     	time_end = std::chrono::high_resolution_clock::now();
         auto time = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count();
         if(time > TIMEOUT)
