@@ -1,3 +1,40 @@
+/**
+* \file UI.cpp
+* \brief Final assignment: controller for a mobile robot using RViz and Gazebo
+* \author Monica Fossati
+* \version 1.0
+* \date 18/03/2022
+
+* \param [in] GOAL_TH Define the threshold distance between the robot and the goal to consider the goal reached
+* \param [in] D_TH Define the threshold distance between the robot and a wall to consider too close and so dangerous
+* \param [in] TIMEOUT Define the timeout for reaching a goal. After this time the goal is considered not reachable
+*
+* \details
+*
+* Subscribes to: <BR>
+* ° /move_base/feedback It contains the current status
+* ° /move_base/goal It contains the actual goal
+* ° /prov_cmd_vel It contains the velocity command to be check if the robot is in driving assistence mode
+* ° /scan It contains the distances measured by the laser scanner sensors
+*
+* Publishes to: <BR>
+* ° /move_base/goal It contains the actual goal
+* ° /move_base/cancel It cancel the goal specified by an ID
+* ° /cmd_vel It contains the confirmed velocity command
+*
+* Description :
+*
+* This node allows the user to control a mobile robot in 3 different modes:
+* ° setting the coordinates of a goal to be achieved and the robot would have to dynamically calculate a path to reach it
+* ° controlling it via keyboard
+* ° controlling it via keyboard with assistance to avoid obstacles
+*
+* The robot is moving in an unknown environment; but it can construct a map and detect walls thanks to laser scanner sensors.
+*
+*/
+
+**/
+
 // Headers
 #include <iostream>
 #include <string>
@@ -15,32 +52,30 @@
 #define D_TH 0.5 //A wall is considered to be too close if the distance between it and the robot is < 0.5
 #define TIMEOUT 180000000 // A goal is considered not reachable if the robot doesn't reach it within 3 minutes
 
-// Goal to cancel message
-actionlib_msgs::GoalID canc_goal;
+actionlib_msgs::GoalID canc_goal; ///< Goal to cancel message
 
 // Declare the publishers
-ros::Publisher pub_vel;
-ros::Publisher pub_goal;
-ros::Publisher pub_cancel;
+ros::Publisher pub_vel; ///< Define publisher on topic /cmd_vel
+ros::Publisher pub_goal; ///< Define publisher on topic /move_base/goal
+ros::Publisher pub_cancel; ///< Define publisher on topic /move_base/cancel
 
-float x_goal; // Goal coordinate x
-float y_goal; // Goal coordinate y
+float x_goal; ///< Goal coordinate x
+float y_goal; ///< Goal coordinate y
 
 
-bool goal = false;
-bool manDrive = false;
-bool driveAssistence = false;
+bool goal = false; ///< Boolean variable for indicating if there is a goal
+bool manDrive = false; ///< Boolean variable for indicating if manual driving is enabled
+bool driveAssistence = false; ///< Boolean variable for indicating if driving assistence is enabled
 
-geometry_msgs::Twist stop; // Null velocity to stop the robot
-geometry_msgs::Twist new_vel; // Velocity to be checked by the driving assistence before being published
+geometry_msgs::Twist stop; ///< Null velocity message to stop the robot
+geometry_msgs::Twist new_vel; ///< Message with velocity to be checked by the driving assistence before being published
 
-char k = 'a'; // Variable used to store the user commands
-std::string id = ""; // Goal ID
+char k = 'a'; ///< Variable used to store the user commands
+std::string id = ""; ///< Goal ID
 // Time variable to measure the time spent reaching the goal
-std::chrono::high_resolution_clock::time_point time_start;  
-std::chrono::high_resolution_clock::time_point time_end;
+std::chrono::high_resolution_clock::time_point time_start;  ///< Start time for reaching a goal
+std::chrono::high_resolution_clock::time_point time_end; ///< Actual time to be compared with the start time and compute the time spent in reaching the goal
 
-// Initialize a raw string literal to print the menu
 const char * menu = R"(
    MENU
    --------------------------------------------
@@ -48,10 +83,13 @@ const char * menu = R"(
    1 : Insert new goal's coordinates
    2 : Cancel current goal
    3 : Manual driving
-)";
+)"; ///< Initialize a raw string literal to print the menu
 
-/*
-This function print on the screen the actual goal if a goal has been set
+/**
+* \brief This function print on the screen the actual goal if a goal has been set
+* \return void as this method cannot fail.
+*
+* This function print on the screen the actual goal if a goal has been set, otherwise it displays NaN as goal's coordinates
 */
 void printGoal()
 {
@@ -73,9 +111,12 @@ void printGoal()
     	}
 }
 
-/*
-This function ask the user to enter the goal's coordinates
-Then it sends a message to the goal topic and takes the starting time
+/**
+* \brief This function set the new goal from the user
+* \return void as this method cannot fail.
+*
+* This function ask the user to enter the goal's coordinates
+* Then it sends a message to the goal topic and takes the starting time
 */
 void setGoal()
 {
@@ -106,9 +147,12 @@ void setGoal()
 	goal = true;
 }
 
-/*
-This function return false if there isn't a goal to cancel,
-or cancel the goal by its id and return true
+
+/**
+* \brief This function cancels the actual goal
+* \return True if the goal has been cancelled correctly, False if there is no goal to cancel
+*
+* This function return false if there isn't a goal to cancel, or cancel the goal by its ID publishing a message on /move_base/cancel topic and return true
 */
 bool cancelGoal()
 {
@@ -121,9 +165,14 @@ bool cancelGoal()
 	
 }
 
-/*
-This function is called whenever something is published on move_base/feedback topic
-It checks if the goal is been reached, updates the actual goal id and cancel the actual goal if the timeout is reached
+/**
+* \brief When a new current status is available, this function checks if the goal is been reached, updates the actual goal id and cancel the actual goal if the timeout is reached
+* \param msg It's a pointer to the message published on move_base/feedback topic.
+* \return void as this method cannot fail.
+*
+* This function updates the goal ID if there is a new goal
+* If there is a goal checks if the robot has reached the goal, otherwise it computes for how much time the robot was trying to reach the goal
+* If this time is greater than the timeout, the goal is cancelled
 */
 void currentStatus(const move_base_msgs::MoveBaseActionFeedback::ConstPtr& msg) {
 
@@ -162,20 +211,24 @@ void currentStatus(const move_base_msgs::MoveBaseActionFeedback::ConstPtr& msg) 
     }
 }
 
-/*
-This function saves in global variables the actual goal
+/**
+* \brief This function saves in global variables the actual goal
+* \return void as this method cannot fail.
 */
 void actualGoal(const move_base_msgs::MoveBaseActionGoal::ConstPtr& msg) {
     x_goal = msg->goal.target_pose.pose.position.x;
     y_goal = msg->goal.target_pose.pose.position.y;
 }
 
-/*
-This function is called whenever the teleop twist keyboard want to change the robot velocity
-If the robot isn't in manual driving, the message is ignored.
-If the robot is in manual driving, but driving assistence is disabled, the message is sent to the cmd_vel topic
-If the robot is in manual driving and driving assistence is enabled, the message is saved in a global variable 
-and it will be corrected by the driving assistence before being published
+/**
+* \brief This function decides if a provvisory velocity has to be published or not.
+* \param msg It's a pointer to the message published on /prov_cmd_vel topic.
+* \return void as this method cannot fail.
+*
+* This function is called whenever the teleop twist keyboard want to change the robot velocity
+* If the robot isn't in manual driving, the message is ignored.
+* If the robot is in manual driving, but driving assistence is disabled, the message is sent to the /cmd_vel topic
+* If the robot is in manual driving and driving assistence is enabled, the message is saved in a global variable and it will be corrected by the driving assistence before being published
 */
 void getVel(const geometry_msgs::Twist::ConstPtr& msg) {
     if(!manDrive)
@@ -189,8 +242,11 @@ void getVel(const geometry_msgs::Twist::ConstPtr& msg) {
     new_vel.angular.z = msg->angular.z;
 }
 
-/*
-This function receives as input an array of distances and return the smallest
+/**
+* \brief This function computes the minimum distance detected by the sensors
+* \param scan[] It's the array containing the distances measured by the laser scanner
+* \param size It's the scan[] length
+* \return min_dist The minumum distance in the array provided
 */
 double check_dist(double scan[], int size)
 {
@@ -205,13 +261,17 @@ double check_dist(double scan[], int size)
 	return min_dist;
 }
 
-/*
-This function is called whenever a message from LaserScan topic arrives.
-If driving assistence is disabled the function does nothing.
-If the driving assistence is enabled:
-	- divides the distances in input in 5 sectors
-	- if there is a close wall in the direction where the user wants the robot to go, 
-	  it prints a warning on the console and stops the robot
+/**
+* \brief This function decides if the robot can execute the user command without hitting a wall.
+* \param msg It's a pointer to the message published on /scan topic.
+* \return void as this method cannot fail.
+*
+* This function is called whenever a message from LaserScan topic arrives.
+* If driving assistence is disabled the function does nothing.
+* If the driving assistence is enabled:
+* 	- divides the distances in input in 5 sectors
+* 	- if there is a close wall in the direction where the user wants the robot to go, 
+* 	  it prints a warning on the console and stops the robot
 */
 
 void drivingAssistence(const sensor_msgs::LaserScan::ConstPtr &msg)
@@ -311,9 +371,13 @@ void drivingAssistence(const sensor_msgs::LaserScan::ConstPtr &msg)
 		
 }
 
-/*
-This function is called when the user choose the manual driving.
-It changes the driving mode and enable/disable driving assistence if the user press 'a'.
+/**
+* \brief This function manages the manual driving mode
+* \return void as this method cannot fail.
+*
+* This function is called when the user choose the manual driving.
+* It changes the driving mode and enable/disable driving assistence if the user press 'a'.
+* It exits from manual driving if the user press 'x'
 */
 void manualDrive()
 {
@@ -351,9 +415,11 @@ void manualDrive()
 	}
 }
 
-/*
-This function print the main menu on the screen
-and calls the functions needed for the selected operation
+/**
+* \brief This function manages the main menu
+* \return void as this method cannot fail.
+*
+*This function print the main menu on the screen and calls the functions needed for the selected operation
 */
 
 void choice()
@@ -395,9 +461,9 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "final_UI");
     ros::NodeHandle nh;
     
-    // Define the publishers
-    pub_goal = nh.advertise<move_base_msgs::MoveBaseActionGoal>("move_base/goal", 1000); // Update goal
-    pub_cancel = nh.advertise<actionlib_msgs::GoalID>("move_base/cancel", 1000); // Cancel actual goal
+    // Initialize the publishers
+    pub_goal = nh.advertise<move_base_msgs::MoveBaseActionGoal>("/move_base/goal", 1000); // Update goal
+    pub_cancel = nh.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1000); // Cancel actual goal
     pub_vel = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000); // Update robot velocity
     
     // Define the subscribers
